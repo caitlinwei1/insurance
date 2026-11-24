@@ -81,7 +81,12 @@ class FakeStream:
 
 FakeMessages.stream = lambda self, **kw: FakeStream(self.create(**kw))
 fake_messages = FakeMessages()
-sys.modules["anthropic"] = types.SimpleNamespace(Anthropic=lambda api_key: types.SimpleNamespace(messages=fake_messages))
+class FakeBadRequest(Exception):
+    pass
+
+
+sys.modules["anthropic"] = types.SimpleNamespace(
+    Anthropic=lambda api_key: types.SimpleNamespace(messages=fake_messages), BadRequestError=FakeBadRequest)
 
 
 def fake_embed(texts, model=None, input_type=None, truncation=True):
@@ -246,3 +251,24 @@ def test_off_topic_skips_search_and_answer():
     assert len(fake_messages.calls) == n_llm + 1             # only the rewrite call, no answer call
     assert ask("How much is urgent care?").route == "ok"      # in-scope questions unaffected
     S.voyage = lambda: types.SimpleNamespace(embed=fake_embed)
+
+
+def test_structured_call_falls_back_when_forced_tool_rejected():
+    from psip_navigator import llm
+    tool = {"name": "grade", "description": "x", "input_schema": {"type": "object", "properties": {}}}
+    seen = []
+
+    class Picky:
+        def create(self, **kw):
+            seen.append(kw.get("tool_choice"))
+            if kw.get("tool_choice", {}).get("type") == "tool":
+                raise FakeBadRequest('tool_choice: type "tool" and "any" are not supported for this model.')
+            return Resp([Block("tool_use", id="g1", name="grade", input={"verdict": "correct"})], "tool_use")
+
+    real = llm.client
+    llm.client = lambda: types.SimpleNamespace(messages=Picky())
+    try:
+        assert llm.structured_call("judge-model", tool, [{"role": "user", "content": "q"}]) == {"verdict": "correct"}
+        assert seen == [{"type": "tool", "name": "grade"}, {"type": "auto"}]
+    finally:
+        llm.client = real

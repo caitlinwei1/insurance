@@ -94,7 +94,15 @@ python scripts/09_eval.py --level answer --lang zh --limit 20
 
 The team's answers are left out by default so a test question can't find its own answer; add `--include-curated` to test the full system. Only questions marked Ready are scored (`--status ""` for all).
 
-**Baseline (no AI, no keys):** BM25 on the raw English question finds an expected source in the top 8 for **74%** of 93 questions (hit@1 26%, hit@3 55%; `results/retrieval_en_norewrite_bm25_*.md`). The misses are mostly everyday wording ("I feel sick, where do I go?"), which is what the rewrite step is for. Compare this baseline with the rewrite + vector runs for the project write-up, and English vs Chinese for the multilingual claim.
+**Retrieval results** (93 Ready questions, team answers excluded; an expected source in the top k):
+
+| Setup | hit@1 | hit@3 | hit@8 |
+| --- | --- | --- | --- |
+| BM25 on the raw English question (no AI) | 26% | 55% | 74% |
+| Full system, English (rewrite + BM25; vectors skipped in `auto` mode) | 40% | 65% | 83% |
+| Full system, Chinese (rewrite + BM25 + Voyage vectors) | 46% | 67% | 86% |
+
+Most remaining misses are labeling, not search: the EOB and term-definition questions (Q51-56, Q88, Q89, Q91) expect the HealthCare.gov glossary while the bot retrieves the policy's own definitions or Penn Medicine's billing FAQ, and hand-off questions (Q100-102) correctly need no document. No test question was wrongly judged off-topic. To test vectors for English too: `VECTOR_MODE=always python scripts/09_eval.py --level retrieval --lang en`.
 
 ## Rebuilding the data
 

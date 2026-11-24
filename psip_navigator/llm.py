@@ -16,6 +16,35 @@ def _text(resp):
     return "".join(b.text for b in resp.content if b.type == "text")
 
 
+def structured_call(model, tool, messages, system=None, max_tokens=500):
+    """Get a dict that matches `tool`'s input schema.
+
+    Forces the tool call when the model supports it. Some models reject a forced
+    tool_choice ("type tool ... not supported"); then we let the model choose, tell it to
+    call the tool, and as a last resort read JSON from its text.
+    """
+    import anthropic
+    kw = dict(model=model, max_tokens=max_tokens, tools=[tool], messages=messages)
+    if system:
+        kw["system"] = system
+    try:
+        resp = client().messages.create(tool_choice={"type": "tool", "name": tool["name"]}, **kw)
+    except anthropic.BadRequestError as e:
+        if "tool_choice" not in str(e):
+            raise
+        nudge = f"\n\nRespond only by calling the {tool['name']} tool."
+        kw["system"] = (system or "") + nudge
+        resp = client().messages.create(tool_choice={"type": "auto"}, **kw)
+    for b in resp.content:
+        if b.type == "tool_use" and b.name == tool["name"]:
+            return dict(b.input)
+    text = _text(resp)
+    start, end = text.find("{"), text.rfind("}")
+    if start != -1 and end > start:
+        return json.loads(text[start:end + 1])
+    raise RuntimeError(f"{model} did not return {tool['name']}: {text[:200]}")
+
+
 # ---------------------------------------------------------------- rewrite
 REWRITE_SYSTEM = """You prepare search queries for PSIP Navigator, a chatbot that answers Penn international \
 students' questions about the Penn Student Insurance Plan (PSIP, Aetna Student Health) and Penn's health care rules.
@@ -79,12 +108,8 @@ def rewrite(question: str, history=None) -> dict:
     for turn in (history or [])[-4:]:
         convo += f"{turn['role']}: {turn['content'][:600]}\n"
     msg = (f"Recent conversation:\n{convo}\n" if convo else "") + f"Student's latest message:\n{question}"
-    resp = client().messages.create(
-        model=REWRITE_MODEL, max_tokens=500, system=REWRITE_SYSTEM,
-        tools=[PLAN_TOOL], tool_choice={"type": "tool", "name": "submit_search_plan"},
-        messages=[{"role": "user", "content": msg}])
-    block = next(b for b in resp.content if b.type == "tool_use")
-    return dict(block.input)
+    return structured_call(REWRITE_MODEL, PLAN_TOOL, [{"role": "user", "content": msg}],
+                           system=REWRITE_SYSTEM, max_tokens=700)
 
 
 # ---------------------------------------------------------------- answer

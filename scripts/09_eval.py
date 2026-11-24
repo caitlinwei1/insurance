@@ -72,12 +72,9 @@ GRADE_TOOL = {"name": "grade", "description": "Return the grade.", "input_schema
 
 
 def judge(r, reply, lang):
-    from psip_navigator.llm import client
-    resp = client().messages.create(
-        model=JUDGE_MODEL, max_tokens=400, tools=[GRADE_TOOL], tool_choice={"type": "tool", "name": "grade"},
-        messages=[{"role": "user", "content": JUDGE.format(
-            q=r["question"], ref=r["expected_answer"], kind=r["kind"], lang=lang, ans=reply)}])
-    return dict(next(b for b in resp.content if b.type == "tool_use").input)
+    from psip_navigator.llm import structured_call
+    return structured_call(JUDGE_MODEL, GRADE_TOOL, [{"role": "user", "content": JUDGE.format(
+        q=r["question"], ref=r["expected_answer"], kind=r["kind"], lang=lang, ans=reply)}], max_tokens=600)
 
 
 def main():
