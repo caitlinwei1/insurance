@@ -24,7 +24,22 @@
   "referral_rule": {
     "rule": "No required Student Health referral -> out-of-network cost sharing.",
     "source": "AET-POL-010",
-    "evidence": "If you do not get a referral, then we will pay covered services at the out-of-network coverage cost sharing."
+    "evidence": "If you do not get a referral, then we will pay covered services at the out-of-network coverage cost sharing.",
+    "exempt": [
+      "Treatment for an emergency medical condition",
+      "Obstetric and gynecological treatment",
+      "Pediatric care",
+      "More than 25 miles from Student Health",
+      "Student Health is closed",
+      "Annual eye exam / adult vision",
+      "Injury to sound natural teeth or extraction of impacted wisdom teeth",
+      "Mental health and substance abuse",
+      "Women's health and voluntary termination of pregnancy",
+      "Students on leave of absence",
+      "Preventive/routine services",
+      "Outpatient lab services"
+    ],
+    "exempt_source": "AET-POL-010"
   },
   "services": {
     "office_visit": {
@@ -87,7 +102,8 @@
       },
       "note": "Out-of-network ER is paid the same as in-network. Copay is waived if admitted as an inpatient right after the ER visit (inpatient copay applies). Non-emergency use of the ER is not covered.",
       "source": "AET-PDB-034",
-      "evidence": "Emergency room | $100 copayment then the plan | Paid the same as in-network"
+      "evidence": "Emergency room | $100 copayment then the plan | Paid the same as in-network",
+      "referral_required": false
     },
     "lab_xray": {
       "label": "Diagnostic lab work or X-ray",
@@ -102,7 +118,8 @@
         "deductible_applies": true
       },
       "source": "AET-PDB-053",
-      "evidence": "Diagnostic lab work and radiological | $35 copayment then the plan | 70% (of the recognized charge)"
+      "evidence": "Diagnostic lab work and radiological | $35 copayment then the plan | 70% (of the recognized charge)",
+      "referral_note": "Outpatient lab work needs no referral; X-rays and other radiology do."
     },
     "complex_imaging": {
       "label": "MRI, CT or PET scan",
@@ -132,7 +149,8 @@
         "deductible_applies": false
       },
       "source": "AET-PDB-049",
-      "evidence": "Outpatient office visits | $10 copayment then the plan | 70% (of the recognized charge)"
+      "evidence": "Outpatient office visits | $10 copayment then the plan | 70% (of the recognized charge)",
+      "referral_required": false
     },
     "preventive_physical": {
       "label": "Routine physical / preventive visit",
@@ -147,7 +165,8 @@
         "deductible_applies": true
       },
       "source": "AET-PDB-021",
-      "evidence": "Routine physical exams | 100% (of the negotiated charge) | 70% (of the recognized charge)"
+      "evidence": "Routine physical exams | 100% (of the negotiated charge) | 70% (of the recognized charge)",
+      "referral_required": false
     }
   },
   "prescriptions": {

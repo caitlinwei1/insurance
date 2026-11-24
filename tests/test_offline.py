@@ -127,8 +127,12 @@ def test_calculator_follows_plan_order():
     # out of network after deductible: student pays 30%
     r = calculate_cost("office_visit", 1000, network="out", deductible_paid_so_far=1500)
     assert r["breakdown"]["coinsurance"] == 300
-    # no referral -> out-of-network cost sharing
-    assert calculate_cost("lab_xray", 100, has_referral=False)["cost_level"] == "out-of-network"
+    # no referral -> out-of-network cost sharing (office visit needs one)
+    assert calculate_cost("office_visit", 100, has_referral=False)["cost_level"] == "out-of-network"
+    # services that never need a referral stay in-network (AET-POL-010)
+    assert calculate_cost("mental_health_outpatient", 150, has_referral=False)["cost_level"] == "in-network"
+    assert calculate_cost("emergency_room", 3000, has_referral=False)["student_pays"] == 100
+    assert any("lab" in n for n in calculate_cost("lab_xray", 100)["notes"])
     # mental health: $10 copay, no deductible
     assert calculate_cost("mental_health_outpatient", 150)["student_pays"] == 10
     # capped by out-of-pocket max
@@ -170,6 +174,8 @@ def test_full_pipeline_with_vectors(tmp_path=None):
     rep = ask("急诊太贵了，urgent care 要多少钱？")
     assert rep.route == "ok" and rep.plan["language"] == "zh"
     assert any("vec" in c["matched_by"] for c in rep.chunks)         # vector search ran
+    ids = [c["id"] for c in rep.chunks]
+    assert {"AET-POL-005", "AET-POL-007", "AET-POL-010"} <= set(ids)   # core rules always included
     assert rep.tool_calls and rep.tool_calls[0]["tool"] == "calculate_cost"
     assert "$35" in rep.text                                         # number came from the tool
     cited = [c["id"] for c in rep.cited]

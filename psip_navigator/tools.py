@@ -40,6 +40,8 @@ def calculate_cost(service: str, allowed_amount: float, network: str = "in",
     sources = [svc["source"], "AET-POL-005", "AET-POL-008"]
     notes = []
     level = "in_network" if network == "in" else "out_of_network"
+    if svc.get("referral_required") is False:
+        has_referral = True   # this service never needs a Student Health referral (AET-POL-010)
     if network == "in" and not has_referral:
         level = "out_of_network"
         notes.append("No Student Health referral: paid at out-of-network cost sharing.")
@@ -65,6 +67,8 @@ def calculate_cost(service: str, allowed_amount: float, network: str = "in",
                      "the allowed amount (balance billing), except where the No Surprises Act protects you.")
     if svc.get("note"):
         notes.append(svc["note"])
+    if svc.get("referral_note"):
+        notes.append(svc["referral_note"])
     if svc.get("not_covered"):
         notes.append(f"Not covered: {svc['not_covered']}.")
     return {
@@ -148,7 +152,7 @@ TOOL_SPECS = [
                 "service": {"type": "string", "enum": SERVICES},
                 "allowed_amount": {"type": "number", "description": "Allowed/negotiated amount in USD. If the student gave a bill total, use it and say it is an estimate."},
                 "network": {"type": "string", "enum": ["in", "out"]},
-                "has_referral": {"type": "boolean", "description": "False if a Student Health referral was required but not obtained."},
+                "has_referral": {"type": "boolean", "description": "False ONLY if a Student Health referral was required and not obtained. No referral is needed for emergencies, mental health, OB-GYN, preventive care, outpatient lab work, eye exams, when Student Health is closed, or when the student is more than 25 miles away (AET-POL-010)."},
                 "deductible_paid_so_far": {"type": "number"},
                 "out_of_pocket_so_far": {"type": "number"},
             },

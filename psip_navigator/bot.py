@@ -16,7 +16,14 @@ from dataclasses import dataclass, field
 from . import llm, router
 from .config import TOP_K
 from .router import CRISIS_REPLY, looks_chinese
-from .search import search
+from .search import corpus, search
+
+PINNED = ["AET-POL-005", "AET-POL-007", "AET-POL-010"]   # cost-sharing order, deductible waivers, referral exceptions
+
+
+def pinned_chunks():
+    by_id = {c["id"]: c for c in corpus()}
+    return [by_id[i] for i in PINNED if i in by_id]
 
 
 @dataclass
@@ -84,6 +91,9 @@ def ask_stream(question: str, history=None, include_curated=True, use_vectors=Tr
                     include_curated=include_curated, use_vectors=use_vectors,
                     language=plan.get("language"), info=sinfo)
     timings["search"] = time.perf_counter() - t
+    # Core rules nearly every cost or "where do I go" answer depends on; always give them to the model.
+    have = {c["id"] for c in chunks}
+    chunks = chunks + [dict(c, score=0.0, matched_by=["pinned"]) for c in pinned_chunks() if c["id"] not in have]
     if sinfo.get("vectors", "").startswith("unavailable"):
         yield ("stage", "search", "Meaning-based search unavailable (" + sinfo["vectors"][13:] + "); using keyword search")
 
