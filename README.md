@@ -102,6 +102,15 @@ The team's answers are left out by default so a test question can't find its own
 | Full system, English (rewrite + BM25; vectors skipped in `auto` mode) | 40% | 65% | 83% |
 | Full system, Chinese (rewrite + BM25 + Voyage vectors) | 46% | 67% | 86% |
 
+**Answer results** (30 "before care" questions per language, graded by a Claude judge against the team's reference answers, after pinning the core plan rules):
+
+| Language | Correct | Partial | Wrong | Right language |
+| --- | --- | --- | --- | --- |
+| English | 17 | 13 | 0 | 30/30 |
+| Chinese | 21 | 8 | 1 | 29/29 reported |
+
+The one wrong answer (Q001) gave the Counseling address instead of Medical Care; the locations chunk is now always included and the prompt says which office to give.
+
 Most remaining misses are labeling, not search: the EOB and term-definition questions (Q51-56, Q88, Q89, Q91) expect the HealthCare.gov glossary while the bot retrieves the policy's own definitions or Penn Medicine's billing FAQ, and hand-off questions (Q100-102) correctly need no document. No test question was wrongly judged off-topic. To test vectors for English too: `VECTOR_MODE=always python scripts/09_eval.py --level retrieval --lang en`.
 
 ## Rebuilding the data

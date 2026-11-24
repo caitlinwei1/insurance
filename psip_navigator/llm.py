@@ -136,6 +136,8 @@ Student Health 24/7 at 215-746-WELL).
 7. Be short and practical: the answer first in 1-2 sentences, then what to do next. Use a short list only when \
 there are steps.
 8. Some sources are "Team-verified answer (test set)"; use them like any source and cite their ID.
+9. Student Health has two offices: Medical Care and Counseling, at different addresses. Give the address of the \
+office that matches the student's need (physical illness -> Medical Care; mental health -> Counseling).
 
 SOURCES:
 {sources}"""

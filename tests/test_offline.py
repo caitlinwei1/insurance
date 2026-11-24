@@ -175,7 +175,7 @@ def test_full_pipeline_with_vectors(tmp_path=None):
     assert rep.route == "ok" and rep.plan["language"] == "zh"
     assert any("vec" in c["matched_by"] for c in rep.chunks)         # vector search ran
     ids = [c["id"] for c in rep.chunks]
-    assert {"AET-POL-005", "AET-POL-007", "AET-POL-010"} <= set(ids)   # core rules always included
+    assert {"AET-POL-005", "AET-POL-007", "AET-POL-010", "WEL-APT-07"} <= set(ids)   # core rules always included
     assert rep.tool_calls and rep.tool_calls[0]["tool"] == "calculate_cost"
     assert "$35" in rep.text                                         # number came from the tool
     cited = [c["id"] for c in rep.cited]

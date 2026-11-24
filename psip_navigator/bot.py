@@ -18,7 +18,9 @@ from .config import TOP_K
 from .router import CRISIS_REPLY, looks_chinese
 from .search import corpus, search
 
-PINNED = ["AET-POL-005", "AET-POL-007", "AET-POL-010"]   # cost-sharing order, deductible waivers, referral exceptions
+# Always given to the answer model: cost-sharing order, deductible waivers, referral exceptions,
+# and the two Student Health addresses (medical care and counseling are in different buildings).
+PINNED = ["AET-POL-005", "AET-POL-007", "AET-POL-010", "WEL-APT-07"]
 
 
 def pinned_chunks():
