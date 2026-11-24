@@ -1,0 +1,4 @@
+# What the web app needs (Streamlit Community Cloud installs this file)
+anthropic>=0.40
+numpy>=1.26
+streamlit>=1.38

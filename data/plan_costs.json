@@ -1,0 +1,237 @@
+{
+  "_about": "PSIP 2026-2027 cost-sharing rules used by the cost calculator. Every number cites the chunk it came from and a short quote that must appear in that chunk (checked by scripts/04_check_data.py). Order of cost sharing, from AET-POL-005: pay the policy year deductible first (unless waived for that service), then the copayment, then coinsurance. Copayments do not count toward the deductible. Without a Student Health referral (when one is required), care is paid at out-of-network cost sharing (AET-POL-010).",
+  "plan_year": "2026-08-01 to 2027-07-31",
+  "deductible": {
+    "in_network": 400,
+    "out_of_network": 1500,
+    "per": "person per policy year",
+    "source": "AET-POL-006",
+    "evidence": "Student $400 per policy year | $1,500 per policy year"
+  },
+  "out_of_pocket_max": {
+    "in_network": {
+      "individual": 1500,
+      "family": 3000
+    },
+    "out_of_network": {
+      "individual": 4000,
+      "family": 8000
+    },
+    "note": "In-network and out-of-network limits are counted separately.",
+    "source": "AET-POL-008",
+    "evidence": "Family $3,000 per policy year $8,000 per policy year"
+  },
+  "referral_rule": {
+    "rule": "No required Student Health referral -> out-of-network cost sharing.",
+    "source": "AET-POL-010",
+    "evidence": "If you do not get a referral, then we will pay covered services at the out-of-network coverage cost sharing."
+  },
+  "services": {
+    "office_visit": {
+      "label": "Doctor or specialist office visit (includes telemedicine)",
+      "in_network": {
+        "copay": 35,
+        "plan_pays_pct": 100,
+        "deductible_applies": true
+      },
+      "out_of_network": {
+        "copay": 0,
+        "plan_pays_pct": 70,
+        "deductible_applies": true
+      },
+      "source": "AET-PDB-028",
+      "evidence": "Physician, specialist including Consultants | $35 copayment then the plan | 70% (of the recognized charge)"
+    },
+    "urgent_care": {
+      "label": "Urgent care visit",
+      "in_network": {
+        "copay": 35,
+        "plan_pays_pct": 100,
+        "deductible_applies": true
+      },
+      "out_of_network": {
+        "copay": 0,
+        "plan_pays_pct": 70,
+        "deductible_applies": true
+      },
+      "not_covered": "Non-urgent use of an urgent care provider",
+      "source": "AET-PDB-036",
+      "evidence": "Urgent care | $35 copayment then the plan | 70% (of the recognized charge)"
+    },
+    "walk_in_clinic": {
+      "label": "Walk-in clinic visit (non-emergency)",
+      "in_network": {
+        "copay": 35,
+        "plan_pays_pct": 100,
+        "deductible_applies": true
+      },
+      "out_of_network": {
+        "copay": 0,
+        "plan_pays_pct": 70,
+        "deductible_applies": true
+      },
+      "source": "AET-PDB-031",
+      "evidence": "Walk-in clinic visits (non-emergency visit) | $35 copayment then the plan | 70% (of the recognized charge)"
+    },
+    "emergency_room": {
+      "label": "Emergency room visit",
+      "in_network": {
+        "copay": 100,
+        "plan_pays_pct": 100,
+        "deductible_applies": false
+      },
+      "out_of_network": {
+        "copay": 100,
+        "plan_pays_pct": 100,
+        "deductible_applies": false
+      },
+      "note": "Out-of-network ER is paid the same as in-network. Copay is waived if admitted as an inpatient right after the ER visit (inpatient copay applies). Non-emergency use of the ER is not covered.",
+      "source": "AET-PDB-034",
+      "evidence": "Emergency room | $100 copayment then the plan | Paid the same as in-network"
+    },
+    "lab_xray": {
+      "label": "Diagnostic lab work or X-ray",
+      "in_network": {
+        "copay": 35,
+        "plan_pays_pct": 100,
+        "deductible_applies": true
+      },
+      "out_of_network": {
+        "copay": 0,
+        "plan_pays_pct": 70,
+        "deductible_applies": true
+      },
+      "source": "AET-PDB-053",
+      "evidence": "Diagnostic lab work and radiological | $35 copayment then the plan | 70% (of the recognized charge)"
+    },
+    "complex_imaging": {
+      "label": "MRI, CT or PET scan",
+      "in_network": {
+        "copay": 50,
+        "plan_pays_pct": 100,
+        "deductible_applies": true
+      },
+      "out_of_network": {
+        "copay": 0,
+        "plan_pays_pct": 70,
+        "deductible_applies": true
+      },
+      "source": "AET-PDB-053",
+      "evidence": "Diagnostic complex imaging services | $50 copayment then the plan | 70% (of the recognized charge)"
+    },
+    "mental_health_outpatient": {
+      "label": "Outpatient mental health visit (includes telemedicine)",
+      "in_network": {
+        "copay": 10,
+        "plan_pays_pct": 100,
+        "deductible_applies": false
+      },
+      "out_of_network": {
+        "copay": 0,
+        "plan_pays_pct": 70,
+        "deductible_applies": false
+      },
+      "source": "AET-PDB-049",
+      "evidence": "Outpatient office visits | $10 copayment then the plan | 70% (of the recognized charge)"
+    },
+    "preventive_physical": {
+      "label": "Routine physical / preventive visit",
+      "in_network": {
+        "copay": 0,
+        "plan_pays_pct": 100,
+        "deductible_applies": false
+      },
+      "out_of_network": {
+        "copay": 0,
+        "plan_pays_pct": 70,
+        "deductible_applies": true
+      },
+      "source": "AET-PDB-021",
+      "evidence": "Routine physical exams | 100% (of the negotiated charge) | 70% (of the recognized charge)"
+    }
+  },
+  "prescriptions": {
+    "deductible_applies": false,
+    "copay_30_day": {
+      "preferred_generic": 20,
+      "preferred_brand": 50,
+      "non_preferred_generic": 75,
+      "non_preferred_brand": 75
+    },
+    "copay_31_to_90_day_in_network_only": {
+      "preferred_generic": 60,
+      "preferred_brand": 150,
+      "non_preferred_generic": 225,
+      "non_preferred_brand": 225
+    },
+    "out_of_network": "Same 30-day copay; more than a 30-day supply is not covered out of network.",
+    "brand_when_generic_exists": "If you ask for a brand when a generic exists (no 'Dispense As Written'), you pay the brand copay plus the price difference.",
+    "sources": {
+      "preferred_generic": [
+        "AET-PDB-062",
+        "$20 copayment per supply then"
+      ],
+      "preferred_brand": [
+        "AET-PDB-063",
+        "$50 copayment per supply then"
+      ],
+      "non_preferred_generic": [
+        "AET-PDB-064",
+        "$75 copayment per supply then"
+      ],
+      "non_preferred_brand": [
+        "AET-PDB-065",
+        "$75 copayment per supply then"
+      ],
+      "ninety_day_generic": [
+        "AET-PDB-062",
+        "$60 copayment per supply then"
+      ],
+      "ninety_day_brand": [
+        "AET-PDB-063",
+        "$150 copayment per supply then"
+      ],
+      "ninety_day_non_preferred": [
+        "AET-PDB-065",
+        "$225 copayment per supply then"
+      ],
+      "daw_rule": [
+        "AET-PDB-070",
+        "plus the cost difference between the generic drug and the"
+      ]
+    },
+    "formulary_tiers": {
+      "_about": "Maps the drug guide's tier codes (data/formulary.jsonl) to the 30-day retail copay. Specialty drugs (PSP/NPSP) cost the same as generic or brand drugs (SBC); CE drugs are $0 at an in-network pharmacy; NF drugs are not covered unless an exception is granted.",
+      "PG": {
+        "copay_30_day": 20,
+        "copay_31_90_day": 60
+      },
+      "PB": {
+        "copay_30_day": 50,
+        "copay_31_90_day": 150
+      },
+      "NP": {
+        "copay_30_day": 75,
+        "copay_31_90_day": 225
+      },
+      "PSP": {
+        "copay_30_day": "20 if generic, 50 if brand",
+        "copay_31_90_day": "60 if generic, 150 if brand"
+      },
+      "NPSP": {
+        "copay_30_day": 75,
+        "copay_31_90_day": 225
+      },
+      "CE": {
+        "copay_30_day": 0,
+        "note": "No cost with a prescription at an in-network pharmacy; certain limitations may apply"
+      },
+      "NF": {
+        "copay_30_day": null,
+        "note": "Not covered unless an exception request is granted"
+      },
+      "source": "AET-SBC-003",
+      "evidence": "Specialty drugs | noted above for generic | above for generic or brand"
+    }
+  }
+}

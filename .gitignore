@@ -1,0 +1,8 @@
+.env
+.streamlit/secrets.toml
+__pycache__/
+.venv/
+.pytest_cache/
+data/index/partial*
+data/index/query_cache.json
+.DS_Store
