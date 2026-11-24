@@ -73,8 +73,11 @@ GRADE_TOOL = {"name": "grade", "description": "Return the grade.", "input_schema
 
 def judge(r, reply, lang):
     from psip_navigator.llm import structured_call
-    return structured_call(JUDGE_MODEL, GRADE_TOOL, [{"role": "user", "content": JUDGE.format(
+    g = structured_call(JUDGE_MODEL, GRADE_TOOL, [{"role": "user", "content": JUDGE.format(
         q=r["question"], ref=r["expected_answer"], kind=r["kind"], lang=lang, ans=reply)}], max_tokens=600)
+    g.setdefault("verdict", "ungraded")
+    g.setdefault("reason", "")
+    return g
 
 
 def main():
@@ -86,7 +89,15 @@ def main():
     ap.add_argument("--no-vectors", action="store_true", help="BM25 only (no Voyage call)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--status", default="Ready", help="only questions with this status ('' = all)")
+    ap.add_argument("--summarize", metavar="RESULTS_JSONL",
+                    help="only print the summary of a saved results/*.jsonl file (no API calls)")
     a = ap.parse_args()
+    if a.summarize:
+        path = Path(a.summarize)
+        results = [json.loads(l) for l in path.open() if l.strip()]
+        summarize(results, "answer" if path.name.startswith("answer") else "retrieval", path.stem,
+                  rewrite_used="norewrite" not in path.name)
+        return
 
     rows = load_questions(a.lang)
     if a.status:
@@ -149,12 +160,16 @@ def main():
         print(f"[{n}/{len(rows)}] {r['qid']} {status}  {r['question'][:70]}")
     out.close()
 
-    # summary
+    summarize(results, a.level, tag, rewrite_used=not a.no_rewrite)
+
+
+def summarize(results, level, tag, rewrite_used=True):
+    """Print the summary table and save it next to the results as <tag>.md."""
     lines = [f"# Eval: {tag}", "", f"Questions scored: {len(results)}", ""]
     by_phase = defaultdict(list)
     for x in results:
         by_phase[x["phase"]].append(x)
-    if a.level == "retrieval":
+    if level == "retrieval":
         def hits(xs, k):
             return sum(1 for x in xs if x["rank"] and x["rank"] <= k) / max(1, len(xs))
         lines += ["| Phase | N | " + " | ".join(f"hit@{k}" for k in KS) + " |",
@@ -164,24 +179,27 @@ def main():
         misses = [x["qid"] for x in results if not x["rank"]]
         lines += ["", f"Not found in top {max(KS)}: {', '.join(misses) or 'none'}"]
         rejected = [x["qid"] for x in results if x.get("plan", {}).get("in_scope") is False]
-        if not a.no_rewrite:
+        if rewrite_used:
             lines.append(f"Wrongly judged off-topic by the rewrite step (should be none): {', '.join(rejected) or 'none'}")
     else:
         lines += ["| Phase | N | Correct | Partial | Wrong | Right language |", "| --- | --- | --- | --- | --- | --- |"]
         for ph, xs in list(by_phase.items()) + [("All", results)]:
             c = defaultdict(int)
             for x in xs:
-                c[x["grade"]["verdict"]] += 1
-            lang_ok = sum(x["grade"]["right_language"] for x in xs)
-            lines.append(f"| {ph} | {len(xs)} | {c['correct']} | {c['partial']} | {c['wrong']} | {lang_ok}/{len(xs)} |")
-        wrong = [f"{x['qid']}: {x['grade']['reason']}" for x in results if x["grade"]["verdict"] == "wrong"]
+                c[x["grade"].get("verdict", "ungraded")] += 1
+            graded = [x for x in xs if isinstance(x["grade"].get("right_language"), bool)]
+            lang_ok = sum(x["grade"]["right_language"] for x in graded)
+            lang = f"{lang_ok}/{len(graded)}" + (f" ({len(xs) - len(graded)} not reported)" if len(graded) < len(xs) else "")
+            lines.append(f"| {ph} | {len(xs)} | {c['correct']} | {c['partial']} | {c['wrong']} | {lang} |")
+        wrong = [f"{x['qid']}: {x['grade'].get('reason', '')}" for x in results if x["grade"].get("verdict") == "wrong"]
         lines += ["", "Wrong answers:", *[f"- {w}" for w in wrong]]
         rejected = [x["qid"] for x in results if str(x.get("route", "")).startswith("off_topic")]
         lines.append(f"Wrongly judged off-topic (should be none): {', '.join(rejected) or 'none'}")
     summary = "\n".join(lines)
+    out_dir = ROOT / "results"
+    out_dir.mkdir(exist_ok=True)
     (out_dir / f"{tag}.md").write_text(summary)
     print("\n" + summary)
-
 
 if __name__ == "__main__":
     main()
