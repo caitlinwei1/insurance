@@ -71,6 +71,7 @@ def cited_sources(text, chunks):
 def ask_stream(question: str, history=None, include_curated=True, use_vectors=True):
     """Yields:
         ("stage", name, detail)   name in: rewrite, search, answer, tool
+        ("chunks", list)          the passages given to the answer model (before the text starts)
         ("text", delta)           streamed answer text
         ("done", Reply)
     """
@@ -116,6 +117,7 @@ def ask_stream(question: str, history=None, include_curated=True, use_vectors=Tr
         yield ("stage", "search", "Meaning-based search unavailable (" + sinfo["vectors"][13:] + "); using keyword search")
 
     yield ("stage", "answer", f"Writing the answer from {len(chunks)} sources")
+    yield ("chunks", chunks)   # lets the page number citations while the answer streams
     t = time.perf_counter()
     first_token = None
     text, tool_log = "", []

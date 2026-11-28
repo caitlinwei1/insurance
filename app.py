@@ -20,7 +20,12 @@ try:
 except Exception:  # no secrets file (local run): fine
     pass
 
-from psip_navigator.bot import ask_stream, source_label  # noqa: E402
+from psip_navigator.bot import ask_stream  # noqa: E402
+from psip_navigator.citations import CSS, render  # noqa: E402
+
+# Team-only controls (search details, answer-source switch) appear only with ?debug=1 in the URL.
+DEBUG = st.query_params.get("debug") == "1"
+st.markdown(CSS, unsafe_allow_html=True)
 
 # Usage limits, so a shared public link can't run up the API bill.
 PER_SESSION_PER_HOUR = int(os.environ.get("PER_SESSION_PER_HOUR", 20))
@@ -53,9 +58,11 @@ with st.sidebar:
     st.header("PSIP Navigator")
     st.caption("Answers about the Penn Student Insurance Plan (Aetna Student Health, 2026-2027) and where to get "
                "care at Penn. Supports English or Chinese.")
-    include_curated = st.toggle("Use team-verified answers", value=True,
-                                help="Off = answer only from Aetna documents and official web pages.")
-    show_debug = st.toggle("Show search details", value=False)
+    include_curated, show_debug = True, False
+    if DEBUG:
+        include_curated = st.toggle("Use team-verified answers", value=True,
+                                    help="Off = answer only from Aetna documents and official web pages.")
+        show_debug = st.toggle("Show search details", value=False)
     st.divider()
     st.markdown("**Emergency:** call 911 (on campus: PennComm 215-573-3333)  \n"
                 "**Student Health, 24/7:** 215-746-WELL (9355)  \n"
@@ -71,12 +78,20 @@ st.title("PSIP Navigator")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+
+def show_sources(sources_html, n):
+    if n:
+        with st.expander(f"Sources ({n})"):
+            st.markdown(sources_html, unsafe_allow_html=True)
+
+
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
-        st.markdown(m["content"])
-        if m.get("sources"):
-            with st.expander("Sources"):
-                st.markdown("\n".join(m["sources"]))
+        if m["role"] == "assistant":
+            st.markdown(m.get("shown", m["content"]), unsafe_allow_html=True)
+            show_sources(m.get("sources_html", ""), m.get("n_sources", 0))
+        else:
+            st.markdown(m["content"])
 
 if prompt := st.chat_input("Ask in English or Chinese…", max_chars=MAX_QUESTION_CHARS):
     ok, why = _allowed()
@@ -90,35 +105,33 @@ if prompt := st.chat_input("Ask in English or Chinese…", max_chars=MAX_QUESTIO
     with st.chat_message("assistant"):
         status = st.status("Understanding your question…", expanded=False)
         box = st.empty()
-        text, rep = "", None
+        text, rep, retrieved = "", None, []
         try:
             for ev in ask_stream(prompt, history=history, include_curated=include_curated):
                 if ev[0] == "stage":
                     status.update(label=ev[2] + "…")
                     status.write(ev[2])
+                elif ev[0] == "chunks":
+                    retrieved = ev[1]
                 elif ev[0] == "text":
                     text += ev[1]
-                    box.markdown(text + "▌")
+                    box.markdown(render(text, retrieved, partial=True)[0] + "▌", unsafe_allow_html=True)
                 elif ev[0] == "done":
                     rep = ev[1]
         except RuntimeError as e:  # missing key, outdated index
             status.update(label="Something went wrong", state="error")
             st.error(str(e))
             st.stop()
-        box.markdown(rep.text)
+        shown, sources_html, n_sources = render(rep.text, rep.chunks)
+        box.markdown(shown, unsafe_allow_html=True)
         tm = rep.timings
         status.update(label=f"Done in {tm['total']:.1f}s", state="complete", expanded=False)
-        sources = []
-        for c in rep.cited:
-            link = f" ([link]({c['url']}))" if c.get("url") else ""
-            sources.append(f"- {source_label(c)}{link}")
-        if sources:
-            with st.expander("Sources"):
-                st.markdown("\n".join(sources))
+        show_sources(sources_html, n_sources)
         if show_debug and rep.route == "ok":
             with st.expander("Search details"):
                 st.json({"timings_seconds": {k: round(v, 2) for k, v in tm.items() if v is not None},
                          "vector_search": rep.search_info.get("vectors"),
                          "plan": rep.plan, "retrieved": [(c["id"], c["score"], c["matched_by"]) for c in rep.chunks],
                          "tool_calls": rep.tool_calls})
-    st.session_state.messages.append({"role": "assistant", "content": rep.text, "sources": sources})
+    st.session_state.messages.append({"role": "assistant", "content": rep.text, "shown": shown,
+                                      "sources_html": sources_html, "n_sources": n_sources})

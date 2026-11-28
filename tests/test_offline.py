@@ -278,3 +278,20 @@ def test_structured_call_falls_back_when_forced_tool_rejected():
         assert seen == [{"type": "tool", "name": "grade"}, {"type": "auto"}]
     finally:
         llm.client = real
+
+
+def test_citations_numbered_and_clickable():
+    from psip_navigator.citations import render
+    chunks = [
+        {"id": "WEL-010-03", "source_title": "Student Health", "source_type": "official",
+         "url": "https://wellness.upenn.edu/x", "text": "Call 215-746-WELL (9355) 24/7. Visits cost $0."},
+        {"id": "CUR-Q004", "source_type": "curated", "cites": ["WEL-010"], "text": "Team answer."},
+    ]
+    text = "Call first [WEL-010-03]. Not sure [CUR-Q004, WEL-010-03]. Unknown [XYZ-999]. Costs $25 [WEL-0"
+    body, src, n = render(text, chunks, partial=True)
+    assert n == 2
+    assert body.count("<sup>[1]</sup>") == 2 and body.count("<sup>[2]</sup>") == 1
+    assert "WEL-010-03" not in body.split("psip-pop")[0]          # raw ID not shown in the text
+    assert "XYZ-999" not in body and "[WEL-0" not in body          # unknown ID dropped, half ID hidden
+    assert r"\$25" in body and "&#36;0" in body                    # dollars not read as math
+    assert 'href="https://wellness.upenn.edu/x"' in src and "Team-verified answer" in src
