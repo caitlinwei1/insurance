@@ -1,0 +1,14 @@
+{
+ "captured": "2026-11-24T00:00:00Z",
+ "site": "cms.gov",
+ "note": "Condensed from the CMS page (WebFetch summary); field names as on the page.",
+ "pages": [
+  {
+   "url": "https://www.cms.gov/initiatives/your-patient-rights/medical-bill-rights/get-help/guides-resources/read-explanation-benefits",
+   "final_url": "https://www.cms.gov/initiatives/your-patient-rights/medical-bill-rights/get-help/guides-resources/read-explanation-benefits",
+   "status": 200,
+   "title": "How to read an explanation of benefits (EOB)",
+   "md": "# How to read an explanation of benefits (EOB)\n\n## What's an explanation of benefits?\n\nAfter you get care, your health insurance company sends you an explanation of benefits (EOB). It shows the total charges for your visit, how much your health plan covers, and what you will likely pay when your provider bills you. An explanation of benefits is not a bill: many EOBs say \"THIS IS NOT A BILL\" at the top. You may get a separate bill from your provider; compare it with the EOB.\n\n## What's on an explanation of benefits?\n\n- General information: you (the patient), your health plan, who provided your care and when, the claim number, the payee (who is paid or reimbursed), and your plan's customer service phone number.\n- Claim details: the date of service and a description of each service, such as an office visit, lab test or screening.\n- Provider Charges: the amount your provider billed for the visit.\n- Allowed Charges: the amount the provider will be paid under your plan. This can be lower than the Provider Charges.\n- Paid by Insurer: what your health plan paid the provider.\n- What You Owe (Patient Balance, also called patient responsibility): the amount you owe after your plan pays its share. The EOB does not show whether you have already paid part of it.\n- Remark codes: short codes of 2 or 3 letters and numbers that explain costs, charges or payments. Their meanings are listed at the bottom of the EOB.\n\nIf your provider's bill is higher than What You Owe on the EOB, talk to your provider. If you have questions about how your claim was processed, call your health plan."
+  }
+ ]
+}

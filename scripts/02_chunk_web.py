@@ -41,6 +41,9 @@ CODES = {
     "/patient-resources/policies/financial-assistance": ("PMD-FIN", "PMD-FIN"),
     "/patient-resources/policies/no-surprises-act": ("PMD-NSA", "GOV-NSA"),
     "/patient-resources/information-for-patients/language-support-services": ("PMD-LNG", "PMD-LNG"),
+    # CMS (U.S. government) guide to reading an EOB: the glossary has no EOB entry
+    "/initiatives/your-patient-rights/medical-bill-rights/get-help/guides-resources/read-explanation-benefits":
+        ("GOV-EOB", "GOV"),
 }
 
 # Lines/blocks that are page furniture, not content
@@ -119,7 +122,7 @@ def chunk_page(page, captured):
     code, family = code_for(page)
     title = page["title"].strip()
     md = clean_md(page["md"])
-    if family == "GOV":
+    if family == "GOV" and code != "GOV-EOB":
         # glossary pages: drop the pop-up definitions of other terms, keep one chunk per term
         md = re.sub(r"### [^\n]+\n\n[^\n]+\n\nRefer to glossary for more details\.\n*", "", md)
         secs = [([], re.sub(r"^# [^\n]+\n+", "", md).strip())]

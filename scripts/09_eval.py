@@ -40,10 +40,12 @@ def load_questions(lang):
     return rows
 
 
-def hit_rank(chunks, families):
+def hit_rank(chunks, families, also_accept=()):
+    """1-based rank of the first passage from an expected source family, or one of the specific
+    passages listed in also_accept (other documents checked by hand to answer the question)."""
     for i, c in enumerate(chunks):
-        fams = {c.get("family") or c["source_code"], c["source_code"]}
-        if fams & set(families):
+        fams = {c.get("family") or c["source_code"], c["source_code"], c["id"]}
+        if fams & (set(families) | set(also_accept)):
             return i + 1
     return None
 
@@ -89,6 +91,10 @@ def main():
     ap.add_argument("--no-vectors", action="store_true", help="BM25 only (no Voyage call)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--status", default="Ready", help="only questions with this status ('' = all)")
+    ap.add_argument("--rerun-misses", metavar="RESULTS_JSONL",
+                    help="reuse a saved run: keep the questions it got right (retrieval: found in top 8, "
+                         "rescored with the current labels; answer: graded correct), rerun only the rest, "
+                         "and report the merged result for all questions")
     ap.add_argument("--summarize", metavar="RESULTS_JSONL",
                     help="only print the summary of a saved results/*.jsonl file (no API calls)")
     a = ap.parse_args()
@@ -104,6 +110,27 @@ def main():
         rows = [r for r in rows if r["status"] == a.status]
     if a.limit:
         rows = rows[: a.limit]
+    kept = {}
+    if a.rerun_misses:
+        from psip_navigator.search import corpus
+        by_id = {c["id"]: c for c in corpus()}
+        labels = {r["qid"]: r for r in rows}
+        for x in (json.loads(l) for l in Path(a.rerun_misses).open() if l.strip()):
+            if x["qid"] not in labels:
+                continue
+            if a.level == "retrieval":
+                lab = labels[x["qid"]]
+                x["expected"] = lab["expected_families"] + lab.get("also_accept", [])
+                x["rank"] = hit_rank([by_id[i] for i in x["top"] if i in by_id],
+                                     lab["expected_families"], lab.get("also_accept", []))
+                if x["rank"]:
+                    kept[x["qid"]] = x
+            elif x.get("grade", {}).get("verdict") == "correct":
+                kept[x["qid"]] = x
+        print(f"reusing {len(kept)} questions answered right in {Path(a.rerun_misses).name}; "
+              f"rerunning {sum(r['qid'] not in kept and (a.level != 'retrieval' or bool(r['expected_families'])) for r in rows)}")
+        order = [r["qid"] for r in rows]
+        rows = [r for r in rows if r["qid"] not in kept]
     # Warm the query-embedding cache with ONE batched Voyage call (the free tier allows only
     # 3 requests/minute, so one call per question would be slow or fall back to keyword search).
     from psip_navigator.config import VECTOR_MODE
@@ -126,7 +153,7 @@ def main():
     out_dir.mkdir(exist_ok=True)
     stamp = time.strftime("%Y%m%d-%H%M")
     tag = f"{a.level}_{a.lang}{'_curated' if a.include_curated else ''}{'_norewrite' if a.no_rewrite else ''}" \
-          f"{'_bm25' if a.no_vectors else ''}_{stamp}"
+          f"{'_bm25' if a.no_vectors else ''}{'_rerun' if a.rerun_misses else ''}_{stamp}"
     out = (out_dir / f"{tag}.jsonl").open("w", encoding="utf-8")
     results = []
 
@@ -142,10 +169,15 @@ def main():
                 plan = rewrite(r["question"])
                 queries, original = plan["search_queries"], r["question"]
                 rec["plan"] = plan
-            chunks = search(queries, original_question=original, k=max(KS),
-                            include_curated=a.include_curated, use_vectors=not a.no_vectors)
-            rec["expected"] = r["expected_families"]
-            rec["rank"] = hit_rank(chunks, r["expected_families"])
+            if a.no_rewrite:
+                chunks = search(queries, original_question=original, k=max(KS),
+                                include_curated=a.include_curated, use_vectors=not a.no_vectors)
+            else:  # same passages the answer model gets (incl. hand-off contacts)
+                from psip_navigator.bot import retrieve
+                chunks = retrieve(plan, r["question"], include_curated=a.include_curated,
+                                  use_vectors=not a.no_vectors)
+            rec["expected"] = r["expected_families"] + r.get("also_accept", [])
+            rec["rank"] = hit_rank(chunks, r["expected_families"], r.get("also_accept", []))
             rec["top"] = [c["id"] for c in chunks]
         else:
             from psip_navigator.bot import ask
@@ -160,6 +192,12 @@ def main():
         print(f"[{n}/{len(rows)}] {r['qid']} {status}  {r['question'][:70]}")
     out.close()
 
+    if kept:  # merge: reused + rerun, in the test set's order, saved as one full results file
+        new = {x["qid"]: x for x in results}
+        results = [kept.get(q) or new[q] for q in order if q in kept or q in new]
+        with (out_dir / f"{tag}.jsonl").open("w", encoding="utf-8") as f:
+            for x in results:
+                f.write(json.dumps(x, ensure_ascii=False) + "\n")
     summarize(results, a.level, tag, rewrite_used=not a.no_rewrite)
 
 

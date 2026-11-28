@@ -52,7 +52,7 @@ def _allowed():
 with st.sidebar:
     st.header("PSIP Navigator")
     st.caption("Answers about the Penn Student Insurance Plan (Aetna Student Health, 2026-2027) and where to get "
-               "care at Penn. Ask in any language.")
+               "care at Penn. Supports English or Chinese.")
     include_curated = st.toggle("Use team-verified answers", value=True,
                                 help="Off = answer only from Aetna documents and official web pages.")
     show_debug = st.toggle("Show search details", value=False)
@@ -67,8 +67,6 @@ with st.sidebar:
         st.rerun()
 
 st.title("PSIP Navigator")
-st.caption("e.g. “Student Health is closed and I have a fever. Where do I go?” · “验血要花多少钱？” · "
-           "“What does ‘applied to deductible’ mean on my EOB?”")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -80,7 +78,7 @@ for m in st.session_state.messages:
             with st.expander("Sources"):
                 st.markdown("\n".join(m["sources"]))
 
-if prompt := st.chat_input("Ask about your insurance or where to get care…", max_chars=MAX_QUESTION_CHARS):
+if prompt := st.chat_input("Ask in English or Chinese…", max_chars=MAX_QUESTION_CHARS):
     ok, why = _allowed()
     if not ok:
         st.warning(why)

@@ -23,6 +23,24 @@ from .search import corpus, search
 PINNED = ["AET-POL-005", "AET-POL-007", "AET-POL-010", "WEL-APT-07"]
 
 
+# For requests only a person can handle (is this bill right, claim status, appeal for me): the Insurance
+# Navigators' contact details and the Aetna claims line, so the answer can route the student.
+HANDOFF = ["WEL-027-12", "WEL-046-02"]
+
+
+def retrieve(plan, question, include_curated=True, use_vectors=True, info=None):
+    """The top-TOP_K passages for a plan: hand-off contacts first when the student needs a person,
+    then search results. This is exactly what the eval scores."""
+    by_id = {c["id"]: c for c in corpus()}
+    first = [dict(by_id[i], score=0.0, matched_by=["handoff"]) for i in HANDOFF
+             if plan.get("needs_person") and i in by_id]
+    found = search(plan["search_queries"], original_question=question, k=TOP_K,
+                   include_curated=include_curated, use_vectors=use_vectors,
+                   language=plan.get("language"), info=info)
+    have = {c["id"] for c in first}
+    return (first + [c for c in found if c["id"] not in have])[:TOP_K]
+
+
 def pinned_chunks():
     by_id = {c["id"]: c for c in corpus()}
     return [by_id[i] for i in PINNED if i in by_id]
@@ -89,9 +107,7 @@ def ask_stream(question: str, history=None, include_curated=True, use_vectors=Tr
     yield ("stage", "search", "Searching plan documents: " + "; ".join(plan["search_queries"]))
     t = time.perf_counter()
     sinfo = {}
-    chunks = search(plan["search_queries"], original_question=question, k=TOP_K,
-                    include_curated=include_curated, use_vectors=use_vectors,
-                    language=plan.get("language"), info=sinfo)
+    chunks = retrieve(plan, question, include_curated=include_curated, use_vectors=use_vectors, info=sinfo)
     timings["search"] = time.perf_counter() - t
     # Core rules nearly every cost or "where do I go" answer depends on; always give them to the model.
     have = {c["id"] for c in chunks}

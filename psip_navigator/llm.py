@@ -63,6 +63,9 @@ words to plan terms (e.g. "school clinic" -> "Student Health", "blood test" -> "
 - drug_names: English names of any medicines mentioned (brand or generic), else [].
 - crisis / emergency: true if the student may be in crisis (suicide, self-harm) or describes an emergency symptom.
 - in_scope: true if the message is about health insurance, getting medical or mental-health care, costs, bills, EOBs, claims, prescriptions, insurance terms, Penn health services, or anything else PSIP Navigator could help with, including follow-ups in the conversation. false for unrelated requests (weather, homework, coding, other topics) and for greetings or small talk with no question. When unsure, use true. Crisis or emergency is always true.
+- needs_person: true when the student asks for something only a person can do: judge whether a specific bill \
+or charge is correct, check the status of their own claim, file or handle an appeal or dispute for them, or help \
+them go through their own bill or EOB. false for general questions (what is an EOB, how do appeals work).
 - message_type: "question" (anything in scope), "greeting", "thanks", "feedback" (complaints, frustration, \
 insults, swearing, "this is wrong"), "unrelated_request" (help with something outside health insurance and care), \
 or "other" (nonsense, tests like "asdf").
@@ -93,6 +96,7 @@ PLAN_TOOL = {
             "crisis": {"type": "boolean"},
             "emergency": {"type": "boolean"},
             "in_scope": {"type": "boolean"},
+            "needs_person": {"type": "boolean"},
             "message_type": {"type": "string", "enum": ["question", "greeting", "thanks", "feedback",
                                                         "unrelated_request", "other"]},
             "off_topic_reply": {"type": "string"},

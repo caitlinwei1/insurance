@@ -56,6 +56,23 @@ def main():
     texts = [doc_text(c) for c in docs]
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Reuse vectors of chunks already in the current index; embed only new or changed ones.
+    old = {}
+    if (INDEX_DIR / "embeddings.npy").exists() and (INDEX_DIR / "ids.json").exists() and not PARTIAL.exists():
+        m = np.load(INDEX_DIR / "embeddings.npy")
+        old = dict(zip(json.loads((INDEX_DIR / "ids.json").read_text()), m))
+    if old:
+        new = [i for i in ids if i not in old]
+        print(f"{len(ids) - len(new)} chunks already embedded; embedding {len(new)} new: {new[:10]}")
+        if new:
+            r = voyage().embed([texts[ids.index(i)] for i in new], model=EMBED_MODEL, input_type="document",
+                               truncation=True)
+            old.update(zip(new, np.array(r.embeddings, dtype=np.float32)))
+        np.save(INDEX_DIR / "embeddings.npy", np.array([old[i] for i in ids], dtype=np.float32))
+        (INDEX_DIR / "ids.json").write_text(json.dumps(ids))
+        print(f"saved {len(ids)} vectors to {INDEX_DIR}")
+        return
+
     vecs = []
     if PARTIAL.exists():
         try:  # a crash mid-save can leave a broken file; then just start over
